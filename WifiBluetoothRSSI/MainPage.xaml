@@ -1,0 +1,19 @@
+﻿<Page
+    x:Class="WifiBluetoothRSSI.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WifiBluetoothRSSI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" RequestedTheme="Light" Width="528" Height="694" HorizontalAlignment="Left" VerticalAlignment="Top">
+    <Grid HorizontalAlignment="Left" Height="654" VerticalAlignment="Top" Width="504" Margin="10,10,0,0">
+        <TextBox x:Name="SearchNetworkBox" HorizontalAlignment="Left" Margin="34,83,0,0" Text="Wyntron AP" TextWrapping="Wrap" VerticalAlignment="Top" Width="345" TextChanged="TextBox_TextChanged"/>
+        <Button x:Name="scanBtn" Content="Scan all available" Margin="33,32,0,0" VerticalAlignment="Top" Click="Button_Click" Height="32" Width="156"/>
+        <TextBox x:Name="ResultsLog" Margin="33,190,38,53" Text="" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Visible"/>
+        <Button Content="Submit MAC Address" Height="36" Margin="223,123,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click_1"/>
+        <Button Content="Submit SSID" Height="36" Margin="33,123,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click_2"/>
+    </Grid>
+
+
+</Page>

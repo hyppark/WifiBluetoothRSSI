@@ -46,5 +46,6 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <DeviceCapability Name="wiFiControl"/>
+    <DeviceCapability Name="bluetooth"/>
   </Capabilities>
 </Package>

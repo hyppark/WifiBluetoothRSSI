@@ -18,63 +18,98 @@ using Windows.Devices.WiFi;
 using Windows.Networking.Connectivity;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth.Advertisement;
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+//using static WiFiBluetoothRSSI.WiFiScanner;
 
-namespace WifiBluetoothRSSI
+namespace WiFiBluetoothRSSI
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private WiFiAdapter wifiAdapter;
+        
         private BluetoothLEAdvertisementWatcher watcher;
         public MainPage()
         {
             this.InitializeComponent();
-            SetupWifiScanner();
-            SetupBluetoothScanner();
+            
         }
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-
-
-        }
-        /// <summary>
-        /// WiFi Scanner Setup
-        /// Must be called by UI thread at least once
-        /// </summary>
-        private async void SetupWifiScanner()
-        {
-            var access = await WiFiAdapter.RequestAccessAsync();
-
-            if (access != WiFiAccessStatus.Allowed)
+            int wifiScannerSetupStatus = await WiFiScanner.SetupWifiScanner();
+            
+            // Optional status printing to verify status
+            if (wifiScannerSetupStatus == 1)
             {
-                // NOTE:    if found to be Denied, add to Capabilities in Package.appxmanifest the following:
-                //          <DeviceCapability Name="wiFiControl"/> 
+                WifiResultsLog.Text += "Adapter found with AdapterID: " + WiFiScanner.wifiAdapter.NetworkAdapter.NetworkAdapterId + "\n";
+                WifiResultsLog.Text += "NetworkId: " + WiFiScanner.wifiAdapter.NetworkAdapter.NetworkItem.NetworkId + "\n";
+            }
+            else if (wifiScannerSetupStatus == 0)
+            {
+                WifiResultsLog.Text += "No adapters found...\n";
+            }
+            else if (wifiScannerSetupStatus == -1)
+            {
                 WifiResultsLog.Text += "Access to RequestAccessAsync is denied\n";
+            }
+
+            SetupBluetoothScanner();
+        }
+
+        /* 
+         * =========================
+         * WIFI SAMPLE CODE SECTION
+         * =========================
+         */
+        // SAMPLE: List all WiFi networks
+        private async void WifiScan_Button_Click(object sender, RoutedEventArgs e)
+        {
+            WiFiNetworkReport report = await WiFiScanner.getWifiNetworkReport();
+            foreach (var network in report.AvailableNetworks)
+            {
+                WifiResultsLog.Text += "SSID: " + network.Ssid + " | MAC: " + network.Bssid + "\n";
+                WifiResultsLog.Text += "RSSI: " + network.NetworkRssiInDecibelMilliwatts + " dBm\n\n";
+            }
+        }
+
+        // SAMPLE: find rssi using WiFi ssid
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            string strSsid = SearchNetworkBox.Text;
+            double dRssi = WiFiScanner.GetWifiRssiSsid(strSsid);
+
+            if (!dRssi.Equals(double.NaN))
+            {
+                WifiResultsLog.Text += "SSID: " + strSsid + " | RSSI: " + dRssi + " dBm\n";
             }
             else
             {
-                var result = await Windows.Devices.Enumeration.DeviceInformation.FindAllAsync(WiFiAdapter.GetDeviceSelector());
-
-                if (result.Count >= 1)
-                {
-                    wifiAdapter = await WiFiAdapter.FromIdAsync(result[0].Id);
-                    WifiResultsLog.Text += "Adapter found with AdapterID: " + wifiAdapter.NetworkAdapter.NetworkAdapterId + "\n";
-                    WifiResultsLog.Text += "NetworkId: " + wifiAdapter.NetworkAdapter.NetworkItem.NetworkId + "\n";
-                }
-                else
-                {
-                    WifiResultsLog.Text += "No adapters found...\n";
-                }
+                WifiResultsLog.Text += "Specified SSID: " + strSsid + " was not detected\n";
             }
 
         }
-        /// <summary>
-        /// WiFi Scanner Setup
-        /// Must be called by UI thread at least once
-        /// </summary>
+        // SAMPLE: find rssi using WiFi mac address
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            string strMac = SearchNetworkBox.Text;
+
+            double dRssi = WiFiScanner.GetWifiRssiMac(strMac);
+
+            if (!dRssi.Equals(double.NaN))
+            {
+                WifiResultsLog.Text += "MAC Address: " + strMac + " | RSSI: " + dRssi + " dBm\n";
+            }
+            else
+            {
+                WifiResultsLog.Text += "Specified MAC Address: " + strMac + " was not detected\n";
+            }
+        }
+
+        /* 
+        * =========================
+        * BLUETOOTH SECTION (To Transfer to standalone class)
+        * =========================
+        */
         private void SetupBluetoothScanner()
         {
             // NOTE:    if found to be Denied, add to Capabilities in Package.appxmanifest the following:
@@ -139,7 +174,7 @@ namespace WifiBluetoothRSSI
             }
 
             // Print results
-            /*
+            
             await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
                 BluetoothResultsLog.Text += string.Format("[{0}]: Adversitement type={1},\nRSSI={2},\nDevice name={3},\nmanufacturerData=[{4}]\n\n",
@@ -149,7 +184,7 @@ namespace WifiBluetoothRSSI
                     localName,
                     manufacturerDataString);
             });
-            */
+            
         }
 
         // Do when advertisement stopped
@@ -160,88 +195,8 @@ namespace WifiBluetoothRSSI
                 BluetoothResultsLog.Text += "Watcher stopped \n";
             });
         }
-        /// <summary>
-        /// WiFi Section
-        /// </summary>
-        /// 
-        // List all WiFi networks
-        private async void WifiScan_Button_Click(object sender, RoutedEventArgs e)
-        {
-            await wifiAdapter.ScanAsync();
-            DisplayNetworkReport(wifiAdapter.NetworkReport);
-        }
-
-        private async void DisplayNetworkReport(WiFiNetworkReport report)
-        {
-            foreach (var network in report.AvailableNetworks)
-            {
-
-                WifiResultsLog.Text += "SSID: " + network.Ssid + " | MAC: " + network.Bssid + "\n";
-                WifiResultsLog.Text += "RSSI: " + network.NetworkRssiInDecibelMilliwatts + " dBm\n\n";
-            }
-        }
-
-        // find rssi using ssid
-        private async void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            string strSsid = SearchNetworkBox.Text;
-            await wifiAdapter.ScanAsync();
-            double dRssi = GetWifiRssiSsid(strSsid, wifiAdapter.NetworkReport);
-
-            if (!dRssi.Equals(double.NaN))
-            {
-                WifiResultsLog.Text += "SSID: " + strSsid + " | RSSI: " + dRssi + " dBm\n";
-            }
-            else
-            {
-                WifiResultsLog.Text += "Specified SSID: " + strSsid + " was not detected\n";
-            }
-
-        }
-        // find rssi using mac address
-        private async void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            string strMac = SearchNetworkBox.Text;
-
-            await wifiAdapter.ScanAsync();
-            double dRssi = GetWifiRssiMac(strMac, wifiAdapter.NetworkReport);
-
-            if (!dRssi.Equals(double.NaN))
-            {
-                WifiResultsLog.Text += "MAC Address: " + strMac + " | RSSI: " + dRssi + " dBm\n";
-            }
-            else
-            {
-                WifiResultsLog.Text += "Specified MAC Address: " + strMac + " was not detected\n";
-            }
-        }
-
-        public double GetWifiRssiSsid(string ssid, WiFiNetworkReport report)
-        {
-            foreach (var network in report.AvailableNetworks)
-            {
-                if(network.Ssid.Trim().ToUpper() == ssid.Trim().ToUpper())
-                {
-                    return network.NetworkRssiInDecibelMilliwatts;
-                }
-            }
-            return double.NaN;
-        }
-
-        public double GetWifiRssiMac(string mac, WiFiNetworkReport report)
-        {
-            mac = mac.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "");
-            foreach (var network in report.AvailableNetworks)
-            {
-                string bssid = network.Bssid.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "");
-                if (bssid.Trim().ToUpper() == mac.Trim().ToUpper())
-                {
-                    return network.NetworkRssiInDecibelMilliwatts;
-                }
-            }
-            return double.NaN;
-        }
-
+        
+        
 
         private void BluetoothScan_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -255,17 +210,19 @@ namespace WifiBluetoothRSSI
         {
         }
 
-        private short getBluetoothRssiMac(string mac, )
-        {
-            // start watcher
-            // if mac match
-            //      return rssi
-        }
+        //private short getBluetoothRssiMac(string mac, )
+        //{
+        //    // start watcher
+        //    // if mac match
+        //    //      return rssi
+        //}
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             watcher.Stop();
             BluetoothResultsLog.Text += "Bluetooth Advertisement Watcher Stopped...\n";
             BluetoothResultsLog.Text += "Watcher status: " + watcher.Status + "\n";
         }
+
+        
     }
 }

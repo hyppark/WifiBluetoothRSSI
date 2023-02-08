@@ -13,22 +13,19 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 // custom namespaces
-using Windows.Storage.Streams;
 using Windows.Devices.WiFi;
 using Windows.Networking.Connectivity;
 using System.Threading.Tasks;
-using Windows.Devices.Bluetooth.Advertisement;
+using System.Diagnostics;
+using Windows.Devices.Enumeration;
 //using static WiFiBluetoothRSSI.WiFiScanner;
 
 namespace WiFiBluetoothRSSI
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainPage : Page
     {
         
-        private BluetoothLEAdvertisementWatcher watcher;
+        
         public MainPage()
         {
             this.InitializeComponent();
@@ -37,7 +34,6 @@ namespace WiFiBluetoothRSSI
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             int wifiScannerSetupStatus = await WiFiScanner.SetupWifiScanner();
-            
             // Optional status printing to verify status
             if (wifiScannerSetupStatus == 1)
             {
@@ -53,9 +49,15 @@ namespace WiFiBluetoothRSSI
                 WifiResultsLog.Text += "Access to RequestAccessAsync is denied\n";
             }
 
-            SetupBluetoothScanner();
-        }
+            
 
+            //int bluetoothScannerSetupStatus = await BluetoothScanner.SetupBluetoothScanner();
+            //BluetoothResultsLog.Text += bluetoothScannerSetupStatus;
+
+            //App.Current.Suspending += BluetoothScanner.App_Suspending;
+            //App.Current.Resuming += BluetoothScanner.App_Resuming;
+
+        }
         /* 
          * =========================
          * WIFI SAMPLE CODE SECTION
@@ -73,10 +75,10 @@ namespace WiFiBluetoothRSSI
         }
 
         // SAMPLE: find rssi using WiFi ssid
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private async void Button_Click_2(object sender, RoutedEventArgs e)
         {
             string strSsid = SearchNetworkBox.Text;
-            double dRssi = WiFiScanner.GetWifiRssiSsid(strSsid);
+            double dRssi = await WiFiScanner.GetWifiRssiSsid(strSsid);
 
             if (!dRssi.Equals(double.NaN))
             {
@@ -89,11 +91,11 @@ namespace WiFiBluetoothRSSI
 
         }
         // SAMPLE: find rssi using WiFi mac address
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private async void Button_Click_1(object sender, RoutedEventArgs e)
         {
             string strMac = SearchNetworkBox.Text;
 
-            double dRssi = WiFiScanner.GetWifiRssiMac(strMac);
+            double dRssi = await WiFiScanner.GetWifiRssiMac(strMac);
 
             if (!dRssi.Equals(double.NaN))
             {
@@ -107,120 +109,54 @@ namespace WiFiBluetoothRSSI
 
         /* 
         * =========================
-        * BLUETOOTH SECTION (To Transfer to standalone class)
+        * BLUETOOTH SAMPLE CODE 
         * =========================
         */
-        private void SetupBluetoothScanner()
-        {
-            // NOTE:    if found to be Denied, add to Capabilities in Package.appxmanifest the following:
-            //          <DeviceCapability Name="bluetooth"/>
-
-            watcher = new BluetoothLEAdvertisementWatcher();
-            watcher.SignalStrengthFilter.OutOfRangeTimeout = TimeSpan.FromMilliseconds(2000);
-            
-            // Attach handler 
-            watcher.Received += OnAdvertisementReceived; 
-            // stopping due to various conditions
-            // such as Bluetooth turning off or calling Stop method
-            watcher.Stopped += OnAdvertisementWatcherStopped;
-
-            App.Current.Suspending += App_Suspending;
-            App.Current.Resuming += App_Resuming;
-        }
         
-        private void App_Suspending(object sender, Windows.ApplicationModel.SuspendingEventArgs e)
+        /// <summary>
+        /// Depreciated. Use Class BluetoothLEScanner
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void BluetoothScan_Button_Click(object sender, RoutedEventArgs e)
         {
-            watcher.Stop();
-            // Unregister handlers to prevent memory leak
-            watcher.Received -= OnAdvertisementReceived;
-            watcher.Stopped -= OnAdvertisementWatcherStopped;
-        }
+            // NOT IMPLEMENTED ANYMORE
+            int bluetoothScannerSetupStatus = await BluetoothScanner.SetupBluetoothScanner();
+            BluetoothResultsLog.Text += bluetoothScannerSetupStatus;
 
-        private void App_Resuming(object sender, object e)
-        {
-            watcher.Received += OnAdvertisementReceived;
-            watcher.Stopped += OnAdvertisementWatcherStopped;
-        }
+            App.Current.Suspending += BluetoothScanner.App_Suspending;
+            App.Current.Resuming += BluetoothScanner.App_Resuming;
 
-        private async void OnAdvertisementReceived(BluetoothLEAdvertisementWatcher watcher, BluetoothLEAdvertisementReceivedEventArgs eventArgs)
-        {
-            DateTimeOffset timestamp = eventArgs.Timestamp;
-
-            // Type of advertisement
-            BluetoothLEAdvertisementType advertisementType = eventArgs.AdvertisementType;
-            
-            // received signal strength indicator (RSSI)
-            Int16 rssi = eventArgs.RawSignalStrengthInDBm;
-
-            // name of advertising device. May be blank
-            string localName = eventArgs.Advertisement.LocalName;
-
-            // get first from manufacturer-specific sections
-            string manufacturerDataString = "";
-            var manufacturerSections = eventArgs.Advertisement.ManufacturerData;
-
-            if(manufacturerSections.Count > 0)
-            {
-                var manufacturerData = manufacturerSections[0];
-                var dataLength = new byte[manufacturerData.Data.Length];
-                using (var reader = DataReader.FromBuffer(manufacturerData.Data))
-                {
-                    reader.ReadBytes(dataLength);
-                }
-                // get company ID + raw data in hex format
-                manufacturerDataString = string.Format("0x{0}: {1}",
-                    manufacturerData.CompanyId.ToString("X"),
-                    BitConverter.ToString(dataLength));
-            }
-
-            // Print results
-            
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                BluetoothResultsLog.Text += string.Format("[{0}]: Adversitement type={1},\nRSSI={2},\nDevice name={3},\nmanufacturerData=[{4}]\n\n",
-                    timestamp.ToString("HH\\:mm\\:ss\\.fff"),
-                    advertisementType.ToString(),
-                    rssi.ToString(),
-                    localName,
-                    manufacturerDataString);
-            });
-            
-        }
-
-        // Do when advertisement stopped
-        private async void OnAdvertisementWatcherStopped(BluetoothLEAdvertisementWatcher watcher, BluetoothLEAdvertisementWatcherStoppedEventArgs eventArgs)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                BluetoothResultsLog.Text += "Watcher stopped \n";
-            });
-        }
-        
-        
-
-        private void BluetoothScan_Button_Click(object sender, RoutedEventArgs e)
-        {
             BluetoothResultsLog.Text += "Bluetooth Advertisement Watcher Starting...\n";
-            watcher.Start();
-            BluetoothResultsLog.Text += "Watcher status: " + watcher.Status + "\n";
-            //open BT advertisement
+            BluetoothScanner.Start();
+
+            BluetoothResultsLog.Text += "Watcher status: " + BluetoothScanner.getWatcherStatus() + "\n";
+             //open BT advertisement
         }
 
-        private void SubmitBluetoothMac_Button_Click(object sender, RoutedEventArgs e)
+        private async void SubmitBluetoothMac_Button_Click(object sender, RoutedEventArgs e)
         {
+            BluetoothLEScanner bleScanner = new BluetoothLEScanner();
+            string macAdr = SearchBluetoothBox.Text;
+            double dRssi = await bleScanner.GetBleRssiMac(macAdr);
+            
+            if (!Double.IsNaN(dRssi))
+            {
+                Debug.WriteLine(String.Format("MAC: {0} | RSSI: {1}\n", macAdr, dRssi));
+                BluetoothResultsLog.Text += String.Format("MAC: {0} | RSSI: {1}\n", macAdr, dRssi);
+            }
+            else
+            {
+                Debug.WriteLine(String.Format("MAC: {0} | RSSI: {1}\n", macAdr, dRssi));
+                BluetoothResultsLog.Text += String.Format("MAC: {0} not Detected!\n", macAdr);
+            }
         }
 
-        //private short getBluetoothRssiMac(string mac, )
-        //{
-        //    // start watcher
-        //    // if mac match
-        //    //      return rssi
-        //}
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            watcher.Stop();
+            BluetoothScanner.Stop();
             BluetoothResultsLog.Text += "Bluetooth Advertisement Watcher Stopped...\n";
-            BluetoothResultsLog.Text += "Watcher status: " + watcher.Status + "\n";
+            BluetoothResultsLog.Text += "Watcher status: " + BluetoothScanner.getWatcherStatus() + "\n";
         }
 
         

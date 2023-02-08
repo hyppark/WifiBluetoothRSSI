@@ -7,8 +7,8 @@
     <ProjectGuid>{A21271C0-14E2-48C6-B01E-2973653173B6}</ProjectGuid>
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>WifiBluetoothRSSI</RootNamespace>
-    <AssemblyName>WifiBluetoothRSSI</AssemblyName>
+    <RootNamespace>WiFiBluetoothRSSI</RootNamespace>
+    <AssemblyName>WiFiBluetoothRSSI</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.19041.0</TargetPlatformVersion>
@@ -119,6 +119,8 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="BluetoothLEScanner.cs" />
+    <Compile Include="BluetoothScanner.cs" />
     <Compile Include="WiFiScanner.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>

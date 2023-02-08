@@ -12,8 +12,7 @@ namespace WiFiBluetoothRSSI
         public static WiFiAdapter wifiAdapter;
         
         /// <summary>
-        /// WiFi Scanner Setup
-        /// Must be called by UI thread at least once
+        /// WiFi Scanner Setup must be called by UI/Main thread at least once
         /// </summary>
         public static async Task<int> SetupWifiScanner()
         {
@@ -28,6 +27,7 @@ namespace WiFiBluetoothRSSI
             else
             {
                 var result = await Windows.Devices.Enumeration.DeviceInformation.FindAllAsync(WiFiAdapter.GetDeviceSelector());
+                
                 if (result.Count >= 1)
                 {
                     wifiAdapter = await WiFiAdapter.FromIdAsync(result[0].Id);
@@ -41,12 +41,11 @@ namespace WiFiBluetoothRSSI
         }
 
         /// <summary>
-        /// Scans wifiAdapter then returns list of type WiFiNetworkReport
-        /// Iterate through List WiFiNetworkReport.AvailableNetworks to get all available wifi networks
-        /// access rssi, ssid, etc. by using: WiFiNetworkReport.AvailableNetwork[0].Ssid
+        /// Run new scan to detect updated wifi networks, then return network report
+        /// can access rssi, ssid, etc. by using: WiFiNetworkReport.AvailableNetwork[0].Ssid
         /// </summary>
         /// <returns>
-        /// WiFiNetworkReport with list of available networks in WiFiNetworkReport.AvailableNetworks[0~n]
+        /// WiFiNetworkReport containing list of WiFiNetworkReport.AvailableNetworks[0~n]
         /// </returns>
         public static async Task<WiFiNetworkReport> getWifiNetworkReport()
         {
@@ -59,11 +58,9 @@ namespace WiFiBluetoothRSSI
         /// </summary>
         /// <param name="ssid"></param>
         /// <returns>rssi in dBm if found, else double.NaN</returns>
-        public static double GetWifiRssiSsid(string ssid)
+        public static async Task<double> GetWifiRssiSsid(string ssid)
         {
-            // Task.Run() To prevent Deadlock
-            WiFiNetworkReport report = Task.Run(() => getWifiNetworkReport()).Result;
-            // Note for calling async method without return value Task.Run(() => getWifiNetworkReport()).Wait();
+            WiFiNetworkReport report = await getWifiNetworkReport();
             foreach (var network in report.AvailableNetworks)
             {
                 if (network.Ssid.Trim().ToUpper() == ssid.Trim().ToUpper())
@@ -79,10 +76,9 @@ namespace WiFiBluetoothRSSI
         /// </summary>
         /// <param name="mac"></param>
         /// <returns> rssi in dBm if found, else double.NaN </returns>
-        public static double GetWifiRssiMac(string macAdr)
+        public static async Task<double> GetWifiRssiMac(string macAdr)
         {
-            // Task.Run() To prevent Deadlock
-            WiFiNetworkReport report = Task.Run(() => getWifiNetworkReport()).Result;
+            WiFiNetworkReport report = await getWifiNetworkReport();
             macAdr = macAdr.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "");
             foreach (var network in report.AvailableNetworks)
             {

@@ -14,11 +14,9 @@
         <Button x:Name="SubmitWifiMacBtn" Content="Submit MAC Address" Height="36" Margin="223,123,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click_1"/>
         <Button x:Name="SubmitWifiSsidBtn" Content="Submit SSID" Height="36" Margin="33,123,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click_2"/>
         <TextBox x:Name="SearchBluetoothBox" HorizontalAlignment="Left" Margin="437,83,0,0" Text="74:69:96:ba:d0:c9" TextWrapping="Wrap" VerticalAlignment="Top" Width="345"/>
-        <Button x:Name="scanBluetoothBtn" Content="Scan all Bluetooth" Margin="436,32,0,0" VerticalAlignment="Top" Click="BluetoothScan_Button_Click" Height="32" Width="156"/>
         <TextBox x:Name="BluetoothResultsLog" Margin="436,190,0,53" Text="" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Width="346"/>
         <Button x:Name="SubmitBluetoothMAC" Content="Submit MAC Address" Height="36" Margin="626,123,0,0" VerticalAlignment="Top" Width="156" Click="SubmitBluetoothMac_Button_Click"/>
-        <Button Content="=No feature=" Height="36" Margin="436,123,0,0" VerticalAlignment="Top" Width="156" />
-        <Button Content="Stop Scanning" Margin="626,32,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click"/>
+        <Button Content="Cancel Scan" Height="36" Margin="436,123,0,0" VerticalAlignment="Top" Width="156" Click="Button_Click_3" />
     </Grid>
 
 

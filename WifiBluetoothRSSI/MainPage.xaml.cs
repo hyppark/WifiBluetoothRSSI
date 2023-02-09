@@ -12,20 +12,17 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-// custom namespaces
 using Windows.Devices.WiFi;
-using Windows.Networking.Connectivity;
-using System.Threading.Tasks;
 using System.Diagnostics;
-using Windows.Devices.Enumeration;
 //using static WiFiBluetoothRSSI.WiFiScanner;
 
 namespace WiFiBluetoothRSSI
 {
     public sealed partial class MainPage : Page
     {
-        
-        
+        private BluetoothLEScanner bleScanner;
+        private WiFiScanner wifiScanner;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -33,7 +30,12 @@ namespace WiFiBluetoothRSSI
         }
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            int wifiScannerSetupStatus = await WiFiScanner.SetupWifiScanner();
+            wifiScanner = new WiFiScanner();
+            bleScanner = new BluetoothLEScanner();
+            
+            // Must call at least once before scanning
+            int wifiScannerSetupStatus = await wifiScanner.SetupWifiScanner();
+
             // Optional status printing to verify status
             if (wifiScannerSetupStatus == 1)
             {
@@ -49,14 +51,6 @@ namespace WiFiBluetoothRSSI
                 WifiResultsLog.Text += "Access to RequestAccessAsync is denied\n";
             }
 
-            
-
-            //int bluetoothScannerSetupStatus = await BluetoothScanner.SetupBluetoothScanner();
-            //BluetoothResultsLog.Text += bluetoothScannerSetupStatus;
-
-            //App.Current.Suspending += BluetoothScanner.App_Suspending;
-            //App.Current.Resuming += BluetoothScanner.App_Resuming;
-
         }
         /* 
          * =========================
@@ -66,7 +60,7 @@ namespace WiFiBluetoothRSSI
         // SAMPLE: List all WiFi networks
         private async void WifiScan_Button_Click(object sender, RoutedEventArgs e)
         {
-            WiFiNetworkReport report = await WiFiScanner.getWifiNetworkReport();
+            WiFiNetworkReport report = await wifiScanner.getWifiNetworkReport();
             foreach (var network in report.AvailableNetworks)
             {
                 WifiResultsLog.Text += "SSID: " + network.Ssid + " | MAC: " + network.Bssid + "\n";
@@ -78,7 +72,7 @@ namespace WiFiBluetoothRSSI
         private async void Button_Click_2(object sender, RoutedEventArgs e)
         {
             string strSsid = SearchNetworkBox.Text;
-            double dRssi = await WiFiScanner.GetWifiRssiSsid(strSsid);
+            double dRssi = await wifiScanner.GetWifiRssiGivenSsid(strSsid);
 
             if (!dRssi.Equals(double.NaN))
             {
@@ -95,7 +89,7 @@ namespace WiFiBluetoothRSSI
         {
             string strMac = SearchNetworkBox.Text;
 
-            double dRssi = await WiFiScanner.GetWifiRssiMac(strMac);
+            double dRssi = await wifiScanner.GetWifiRssiGivenMac(strMac);
 
             if (!dRssi.Equals(double.NaN))
             {
@@ -113,33 +107,15 @@ namespace WiFiBluetoothRSSI
         * =========================
         */
         
-        /// <summary>
-        /// Depreciated. Use Class BluetoothLEScanner
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void BluetoothScan_Button_Click(object sender, RoutedEventArgs e)
-        {
-            // NOT IMPLEMENTED ANYMORE
-            int bluetoothScannerSetupStatus = await BluetoothScanner.SetupBluetoothScanner();
-            BluetoothResultsLog.Text += bluetoothScannerSetupStatus;
-
-            App.Current.Suspending += BluetoothScanner.App_Suspending;
-            App.Current.Resuming += BluetoothScanner.App_Resuming;
-
-            BluetoothResultsLog.Text += "Bluetooth Advertisement Watcher Starting...\n";
-            BluetoothScanner.Start();
-
-            BluetoothResultsLog.Text += "Watcher status: " + BluetoothScanner.getWatcherStatus() + "\n";
-             //open BT advertisement
-        }
-
+        // SAMPLE: find Bluetooth LE RSSI using MAC Address
         private async void SubmitBluetoothMac_Button_Click(object sender, RoutedEventArgs e)
         {
-            BluetoothLEScanner bleScanner = new BluetoothLEScanner();
             string macAdr = SearchBluetoothBox.Text;
-            double dRssi = await bleScanner.GetBleRssiMac(macAdr);
-            
+            //bleScanner = new BluetoothLEScanner();
+            BluetoothResultsLog.Text += String.Format("Scanning... This operation may take up to 30 seconds.\n");
+
+            double dRssi = await bleScanner.GetBleRssiGivenMac(macAdr);
+
             if (!Double.IsNaN(dRssi))
             {
                 Debug.WriteLine(String.Format("MAC: {0} | RSSI: {1}\n", macAdr, dRssi));
@@ -152,13 +128,10 @@ namespace WiFiBluetoothRSSI
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        // cancel button that can be used to terminate GetBleRssiMac
+        private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            BluetoothScanner.Stop();
-            BluetoothResultsLog.Text += "Bluetooth Advertisement Watcher Stopped...\n";
-            BluetoothResultsLog.Text += "Watcher status: " + BluetoothScanner.getWatcherStatus() + "\n";
+            bleScanner.BCancelled = true;
         }
-
-        
     }
 }

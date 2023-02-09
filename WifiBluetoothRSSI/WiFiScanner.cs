@@ -11,10 +11,14 @@ namespace WiFiBluetoothRSSI
     {
         public static WiFiAdapter wifiAdapter;
         
+        public WiFiScanner()
+        {
+
+        }
         /// <summary>
         /// WiFi Scanner Setup must be called by UI/Main thread at least once
         /// </summary>
-        public static async Task<int> SetupWifiScanner()
+        public async Task<int> SetupWifiScanner()
         {
             var access = await WiFiAdapter.RequestAccessAsync();
 
@@ -47,7 +51,7 @@ namespace WiFiBluetoothRSSI
         /// <returns>
         /// WiFiNetworkReport containing list of WiFiNetworkReport.AvailableNetworks[0~n]
         /// </returns>
-        public static async Task<WiFiNetworkReport> getWifiNetworkReport()
+        public async Task<WiFiNetworkReport> getWifiNetworkReport()
         {
             await wifiAdapter.ScanAsync();
             return wifiAdapter.NetworkReport;
@@ -58,7 +62,7 @@ namespace WiFiBluetoothRSSI
         /// </summary>
         /// <param name="ssid"></param>
         /// <returns>rssi in dBm if found, else double.NaN</returns>
-        public static async Task<double> GetWifiRssiSsid(string ssid)
+        public async Task<double> GetWifiRssiGivenSsid(string ssid)
         {
             WiFiNetworkReport report = await getWifiNetworkReport();
             foreach (var network in report.AvailableNetworks)
@@ -76,14 +80,14 @@ namespace WiFiBluetoothRSSI
         /// </summary>
         /// <param name="mac"></param>
         /// <returns> rssi in dBm if found, else double.NaN </returns>
-        public static async Task<double> GetWifiRssiMac(string macAdr)
+        public async Task<double> GetWifiRssiGivenMac(string macAdr)
         {
             WiFiNetworkReport report = await getWifiNetworkReport();
-            macAdr = macAdr.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "");
+            macAdr = FormatMacAddress(macAdr);
             foreach (var network in report.AvailableNetworks)
             {
-                string bssid = network.Bssid.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "");
-                if (bssid.Trim().ToUpper() == macAdr.Trim().ToUpper())
+                string bssid = FormatMacAddress(network.Bssid);
+                if (bssid == macAdr)
                 {
                     return network.NetworkRssiInDecibelMilliwatts;
                 }
@@ -91,6 +95,11 @@ namespace WiFiBluetoothRSSI
             return double.NaN;
         }
 
+        private string FormatMacAddress(string macAdr)
+        {
+            macAdr = macAdr.Replace("-", "").Replace(".", "").Replace(":", "").Replace(" ", "").Trim().ToUpper();
+            return macAdr;
+        }
 
     }
 
